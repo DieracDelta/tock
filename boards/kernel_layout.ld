@@ -209,7 +209,6 @@ SECTIONS
 
         /* Required for objcopy mechanism to bundle tock kernel and apps
            into a single image to work */
-        LONG(0)
     } > prog
 
 

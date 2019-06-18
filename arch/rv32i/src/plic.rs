@@ -67,6 +67,7 @@ pub unsafe fn disable_all() {
     }
 }
 
+// Surpresses all interrupts. That is to say, interrupt sources will be claimable but will not actually generate an interrupt/call _start_trap().
 pub unsafe fn surpress_all() {
     let plic: &PlicRegisters = &*PLIC_BASE;
     // Accept all interrupts.

@@ -93,6 +93,9 @@ pub enum PermissionMode {
 /// Tell the MCU what address the trap handler is located at.
 ///
 /// The trap handler is called on exceptions and for interrupts.
+///
+/// This is a generic implementation. There may be board specific versions as
+/// some platforms have added more bits to the `mtvec` register.
 pub unsafe fn configure_trap_handler(mode: PermissionMode) {
     match mode {
         PermissionMode::Machine =>

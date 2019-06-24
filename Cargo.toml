@@ -1,0 +1,19 @@
+[workspace]
+members = [
+        "arch/rv32i",
+        #"arch/cortex-m",
+        #"arch/cortex-m0",
+        #"arch/cortex-m3",
+        #"arch/cortex-m4",
+        "capsules",
+        "kernel",
+        "chips/e310x",
+        "boards/hifive1",
+        #"chips/nrf52",
+        #"chips/nrf5x",
+        #"chips/sam4l",
+        #"chips/cc26x2",
+        "chips/sifive",
+        "chips/arty_e21",
+        #"chips/stm32f4xx"
+]

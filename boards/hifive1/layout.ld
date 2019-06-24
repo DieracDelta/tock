@@ -13,4 +13,4 @@ MEMORY
 
 MPU_MIN_ALIGN = 1K;
 
-INCLUDE ../kernel_layout.ld
+INCLUDE boards/kernel_layout.ld

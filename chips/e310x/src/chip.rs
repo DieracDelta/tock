@@ -9,69 +9,14 @@ use crate::gpio;
 use crate::interrupts;
 use crate::uart;
 
-#[derive(Copy, Clone, Default)]
-pub struct RvStoredState {}
-
-pub struct NullSysCall();
-
-impl NullSysCall {
-    pub const unsafe fn new() -> NullSysCall {
-        NullSysCall()
-    }
-}
-
-impl kernel::syscall::UserspaceKernelBoundary for NullSysCall {
-    type StoredState = RvStoredState;
-
-    unsafe fn set_syscall_return_value(
-        &self,
-        _stack_pointer: *const usize,
-        _state: &mut RvStoredState,
-        _return_value: isize,
-    ) {
-    }
-
-    unsafe fn set_process_function(
-        &self,
-        stack_pointer: *const usize,
-        _remaining_stack_memory: usize,
-        _state: &mut RvStoredState,
-        _callback: kernel::procs::FunctionCall,
-        _first_function: bool,
-    ) -> Result<*mut usize, *mut usize> {
-        Err(stack_pointer as *mut usize)
-    }
-
-    unsafe fn switch_to_process(
-        &self,
-        stack_pointer: *const usize,
-        _state: &mut RvStoredState,
-    ) -> (*mut usize, kernel::syscall::ContextSwitchReason) {
-        (
-            stack_pointer as *mut usize,
-            kernel::syscall::ContextSwitchReason::Fault,
-        )
-    }
-
-    unsafe fn fault_fmt(&self, _writer: &mut Write) {}
-
-    unsafe fn process_detail_fmt(
-        &self,
-        _stack_pointer: *const usize,
-        _state: &RvStoredState,
-        _writer: &mut Write,
-    ) {
-    }
-}
-
 pub struct E310x {
-    userspace_kernel_boundary: NullSysCall,
+    userspace_kernel_boundary: rv32i::syscall::SysCall,
 }
 
 impl E310x {
     pub unsafe fn new() -> E310x {
         E310x {
-            userspace_kernel_boundary: NullSysCall::new(),
+            userspace_kernel_boundary: rv32i::syscall::SysCall::new()
         }
     }
 
@@ -84,7 +29,7 @@ impl E310x {
 
 impl kernel::Chip for E310x {
     type MPU = ();
-    type UserspaceKernelBoundary = NullSysCall;
+    type UserspaceKernelBoundary = rv32i::syscall::SysCall;
     type SysTick = ();
 
     fn mpu(&self) -> &Self::MPU {
@@ -95,8 +40,8 @@ impl kernel::Chip for E310x {
         &()
     }
 
-    fn userspace_kernel_boundary(&self) -> &NullSysCall {
-        &(self.userspace_kernel_boundary)
+    fn userspace_kernel_boundary(&self) -> &rv32i::syscall::SysCall {
+        &self.userspace_kernel_boundary
     }
 
     fn service_pending_interrupts(&self) {
@@ -118,14 +63,16 @@ impl kernel::Chip for E310x {
     }
 
     fn has_pending_interrupts(&self) -> bool {
-        unsafe { plic::has_pending() }
+        unsafe{
+            plic::has_pending()
+        }
     }
 
+
     fn sleep(&self) {
-        // unsafe {
-        // riscv32i::support::wfi();
-        rv32i::support::nop();
-        // }
+        unsafe {
+            rv32i::support::wfi();
+        }
     }
 
     unsafe fn atomic<F, R>(&self, f: F) -> R
@@ -134,6 +81,8 @@ impl kernel::Chip for E310x {
     {
         rv32i::support::atomic(f)
     }
+
+
 }
 
 pub unsafe fn handle_trap() {
@@ -150,6 +99,7 @@ pub unsafe fn handle_trap() {
             rv32i::riscvregs::register::mcause::Interrupt::SupervisorSoft => (),
 
             rv32i::riscvregs::register::mcause::Interrupt::MachineTimer => (),
+
             // should never occur
             rv32i::riscvregs::register::mcause::Interrupt::UserTimer => (),
             rv32i::riscvregs::register::mcause::Interrupt::SupervisorTimer => (),

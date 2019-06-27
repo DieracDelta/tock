@@ -8,3 +8,4 @@ edition = "2018"
 kernel = { path = "../../kernel" }
 tock_rt0 = { path = "../../libraries/tock-rt0" }
 riscvregs = { git = "https://github.com/DieracDelta/riscvregs.git", rev = "c03eb6c" }
+

@@ -14,6 +14,7 @@ members = [
         #"chips/sam4l",
         #"chips/cc26x2",
         "chips/sifive",
-        "chips/arty_e21",
+        #"chips/arty_e21",
+        #"boards/arty-e21",
         #"chips/stm32f4xx"
 ]

@@ -5,9 +5,6 @@ authors = ["Tock Project Developers <tock-dev@googlegroups.com>"]
 build = "build.rs"
 edition = "2018"
 
-[target.riscv32ima-unknown-none-elf]
-linker = "rust-lld"
-
 [profile.dev]
 panic = "abort"
 lto = false

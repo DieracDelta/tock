@@ -7,4 +7,4 @@ MEMORY
 
 MPU_MIN_ALIGN = 8K;
 
-INCLUDE ../kernel_layout.ld
+INCLUDE /home/dieraca/uropnew/toolchain/tock/boards/kernel_layout.ld

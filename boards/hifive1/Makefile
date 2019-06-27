@@ -1,5 +1,6 @@
 # Makefile for building the tock kernel for the HiFive1 platform
 
+TARGET_FULL=riscv32imac-unknown-none-elf
 TARGET=riscv32imac-unknown-none-elf
 PLATFORM=hifive1
 

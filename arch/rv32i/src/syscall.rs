@@ -88,54 +88,7 @@ impl kernel::syscall::UserspaceKernelBoundary for SysCall {
         let new_stack_pointer: u32;
 
         asm! ("
-          // Before switching to the app we need to save the kernel registers to
-          // the kernel stack. We then save the stack pointer in the mscratch
-          // CSR (0x340) so we can retrieve it after returning to the kernel
-          // from the app.
-          //
-          // A few values get saved to the kernel stack, including an app
-          // register temporarily after entering the trap handler. Here is a
-          // memory map to make it easier to keep track:
-          //
-          // ```
-          // 33*4(sp):          <- original stack pointer
-          // 32*4(sp): x31
-          // 31*4(sp): x30
-          // 30*4(sp): x29
-          // 29*4(sp): x28
-          // 28*4(sp): x27
-          // 27*4(sp): x26
-          // 26*4(sp): x25
-          // 25*4(sp): x24
-          // 24*4(sp): x23
-          // 23*4(sp): x22
-          // 22*4(sp): x21
-          // 21*4(sp): x20
-          // 20*4(sp): x19
-          // 19*4(sp): x18
-          // 18*4(sp): x17
-          // 17*4(sp): x16
-          // 16*4(sp): x15
-          // 15*4(sp): x14
-          // 14*4(sp): x13
-          // 13*4(sp): x12
-          // 12*4(sp): x11
-          // 11*4(sp): x10
-          // 10*4(sp): x9
-          //  9*4(sp): x8
-          //  8*4(sp): x7
-          //  7*4(sp): x6
-          //  6*4(sp): x5
-          //  5*4(sp): x4
-          //  4*4(sp): x3
-          //  3*4(sp): x1
-          //  2*4(sp): _return_to_kernel (address to resume after trap)
-          //  1*4(sp): *state   (Per-process StoredState struct)
-          //  0*4(sp): app s0   <- new stack pointer
-          // ```
-
           addi sp, sp, -33*4  // Move the stack pointer down to make room.
-
           sw   x1,  3*4(sp)    // Save all of the registers on the kernel stack.
           sw   x3,  4*4(sp)
           sw   x4,  5*4(sp)
@@ -166,44 +119,19 @@ impl kernel::syscall::UserspaceKernelBoundary for SysCall {
           sw   x29, 30*4(sp)
           sw   x30, 31*4(sp)
           sw   x31, 32*4(sp)
-
           sw   $2, 1*4(sp)    // Store process state pointer on stack as well.
-                              // We need to have the available for after the app
-                              // returns to the kernel so we can store its
-                              // registers.
-
-          // Store the address to jump back to on the stack so that the trap
-          // handler knows where to return to after the app stops executing.
           lui  t0, %hi(_return_to_kernel)
           addi t0, t0, %lo(_return_to_kernel)
           sw   t0, 2*4(sp)
-
           csrw 0x340, sp      // Save stack pointer in mscratch. This allows
-                              // us to find it when the app returns back to
-                              // the kernel.
-
-          // Read current mstatus CSR and then modify it so we switch to
-          // user mode when running the app.
           csrr t0, 0x300      // Read mstatus=0x300 CSR
-          // Set the mode to user mode and set MPIE.
           li   t1, 0x1808     // t1 = MSTATUS_MPP & MSTATUS_MIE
           not  t1, t1         // t1 = ~(MSTATUS_MPP & MSTATUS_MIE)
           and  t0, t0, t1     // t0 = mstatus & ~(MSTATUS_MPP & MSTATUS_MIE)
           ori  t0, t0, 0x80   // t0 = t0 | MSTATUS_MPIE
           csrw 0x300, t0      // Set mstatus CSR so that we switch to user mode.
-
-          // We have to set the mepc CSR with the PC we want the app to start
-          // executing at. This has been saved in RiscvimacStoredState for us
-          // (either when the app returned back to the kernel or in the
-          // `set_process_function()` function).
           lw   t0, 31*4($2)   // Retrieve the PC from RiscvimacStoredState
           csrw 0x341, t0      // Set mepc CSR. This is the PC we want to go to.
-
-          // Restore all of the app registers from what we saved. If this is the
-          // first time running the app then most of these values are
-          // irrelevant, However we do need to set the four arguments to the
-          // `_start_ function in the app. If the app has been executing then this
-          // allows the app to correctly resume.
           mv   t0,  $2       // Save the state pointer to a specific register.
           lw   x1,  0*4(t0)  // ra
           lw   x2,  1*4(t0)  // sp
@@ -235,10 +163,8 @@ impl kernel::syscall::UserspaceKernelBoundary for SysCall {
           lw   x29, 28*4(t0) // t4
           lw   x30, 29*4(t0) // t5
           lw   x31, 30*4(t0) // t6
-          lw   x5,  4*4(t0)  // t0. Do last since we overwrite our pointer.
-
-          // Call mret to jump to where mepc points, switch to user mode, and
-          // start running the app.
+          lw   x5,  4*4(t0)
+          // 79th instruction
           mret
 
 

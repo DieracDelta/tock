@@ -17,6 +17,7 @@ use crate::sched::Kernel;
 use crate::syscall::{self, Syscall, UserspaceKernelBoundary};
 use crate::tbfheader;
 use core::cmp::max;
+use debug;
 
 /// Helper function to load processes from flash into an array of active
 /// processes. This is the default template for loading processes, but a board
@@ -1077,7 +1078,9 @@ impl<C: 'static + Chip> Process<'a, C> {
         index: usize,
     ) -> (Option<&'static ProcessType>, usize, usize) {
         if let Some(tbf_header) = tbfheader::parse_and_validate_tbf_header(app_flash_address) {
+            //debug!("validated!");
             let app_flash_size = tbf_header.get_total_size() as usize;
+            //debug!("app_flash_size is {}", app_flash_size);
 
             // If this isn't an app (i.e. it is padding) or it is an app but it
             // isn't enabled, then we can skip it but increment past its flash.
@@ -1087,6 +1090,9 @@ impl<C: 'static + Chip> Process<'a, C> {
 
             // Otherwise, actually load the app.
             let mut min_app_ram_size = tbf_header.get_minimum_app_ram_size() as usize;
+            //debug!("min_app_ram_size: {:?}\r\n", min_app_ram_size);
+            //debug!("min_app_ram_size {}", min_app_ram_size);
+
             let process_name = tbf_header.get_package_name();
             let init_fn =
                 app_flash_address.offset(tbf_header.get_init_function_offset() as isize) as usize;
@@ -1147,6 +1153,7 @@ impl<C: 'static + Chip> Process<'a, C> {
             ) {
                 Some((memory_start, memory_size)) => (memory_start, memory_size),
                 None => {
+                    debug!("still, not enough room :(");
                     // Failed to load process. Insufficient memory.
                     return (None, app_flash_size, 0);
                 }

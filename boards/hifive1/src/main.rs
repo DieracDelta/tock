@@ -22,9 +22,22 @@ use kernel::{create_capability, debug, static_init};
 
 pub mod io;
 
-// Actual memory for holding the active process structures. Need an empty list
-// at least.
-static mut PROCESSES: [Option<&'static kernel::procs::ProcessType>; 0] = [];
+
+// State for loading and holding applications.
+
+// Number of concurrent processes this platform supports.
+const NUM_PROCS: usize = 1;
+
+// How should the kernel respond when a process faults.
+const FAULT_RESPONSE: kernel::procs::FaultResponse = kernel::procs::FaultResponse::Panic;
+
+// RAM to be shared by all application processes.
+#[link_section = ".app_memory"]
+static mut APP_MEMORY: [u8; 8192] = [0; 8192];
+
+// Actual memory for holding the active process structures.
+static mut PROCESSES: [Option<&'static kernel::procs::ProcessType>; NUM_PROCS] =
+    [None];
 
 /// Dummy buffer that causes the linker to reserve enough space for the stack.
 #[no_mangle]
@@ -36,6 +49,9 @@ pub static mut STACK_MEMORY: [u8; 0x1000] = [0; 0x1000];
 /// userspace this can just be empty.
 struct HiFive1 {
     modes: u32,
+    //console: &'static capsules::console::Console<'static>,
+    //gpio: &'static capsules::gpio::GPIO<'static, sifive::gpio::GpioPin>,
+    //led: &'static capsules::led::LED<'static, sifive::gpio::GpioPin>,
 }
 
 /// Mapping of integer syscalls to objects that implement syscalls.
@@ -45,6 +61,12 @@ impl Platform for HiFive1 {
         F: FnOnce(Option<&kernel::Driver>) -> R,
     {
         match driver_num {
+            //capsules::console::DRIVER_NUM => f(Some(self.console)),
+            //capsules::gpio::DRIVER_NUM => f(Some(self.gpio)),
+            //capsules::alarm::DRIVER_NUM => f(Some(self.alarm)),
+            //capsules::led::DRIVER_NUM => f(Some(self.led)),
+            //capsules::button::DRIVER_NUM => f(Some(self.button)),
+
             _ => f(None),
         }
     }
@@ -59,6 +81,10 @@ pub unsafe fn reset_handler() {
     // Basic setup of the platform.
     rv32i::init_memory();
     rv32i::configure_trap_handler(rv32i::PermissionMode::Machine);
+
+    let process_mgmt_cap = create_capability!(capabilities::ProcessManagementCapability);
+    let main_loop_cap = create_capability!(capabilities::MainLoopCapability);
+    let memory_allocation_cap = create_capability!(capabilities::MemoryAllocationCapability);
 
     e310x::watchdog::WATCHDOG.disable();
     e310x::rtc::RTC.disable();
@@ -151,14 +177,33 @@ pub unsafe fn reset_handler() {
     debug!("hello world 1");
     debug!("hello world 2");
     debug!("hello world 3");
-    debug!(
-        "the value in MIE is {:x}\n",
-        riscvregs::register::mie::read().bits()
+    //debug!(
+        //"the value in MIE is {:x}\n",
+        //riscvregs::register::mie::read().bits()
+    //);
+    //debug!(
+        //"the value in Mstatus is {:x}\n",
+        //riscvregs::register::mstatus::read().bits()
+    //);
+
+    extern "C" {
+        /// Beginning of the ROM region containing app images.
+        ///
+        /// This symbol is defined in the linker script.
+        static _sapps: u8;
+    }
+
+    kernel::procs::load_processes(
+        board_kernel,
+        chip,
+        &_sapps as *const u8,
+        &mut APP_MEMORY,
+        &mut PROCESSES,
+        FAULT_RESPONSE,
+        &process_mgmt_cap
     );
-    debug!(
-        "the value in Mstatus is {:x}\n",
-        riscvregs::register::mstatus::read().bits()
-    );
+
+
 
     board_kernel.kernel_loop(&hifive1, chip, None, &main_loop_cap);
 }

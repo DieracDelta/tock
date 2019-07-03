@@ -14,6 +14,7 @@
 
 extern crate riscvregs;
 
+use capsules::button;
 use capsules::virtual_uart::{MuxUart, UartDevice};
 use kernel::capabilities;
 use kernel::hil;
@@ -52,6 +53,7 @@ struct HiFive1 {
     //console: &'static capsules::console::Console<'static>,
     //gpio: &'static capsules::gpio::GPIO<'static, sifive::gpio::GpioPin>,
     //led: &'static capsules::led::LED<'static, sifive::gpio::GpioPin>,
+    button: &'static capsules::button::Button<'static, sifive::gpio::GpioPin>,
 }
 
 /// Mapping of integer syscalls to objects that implement syscalls.
@@ -65,7 +67,7 @@ impl Platform for HiFive1 {
             //capsules::gpio::DRIVER_NUM => f(Some(self.gpio)),
             //capsules::alarm::DRIVER_NUM => f(Some(self.alarm)),
             //capsules::led::DRIVER_NUM => f(Some(self.led)),
-            //capsules::button::DRIVER_NUM => f(Some(self.button)),
+            capsules::button::DRIVER_NUM => f(Some(self.button)),
 
             _ => f(None),
         }
@@ -148,8 +150,26 @@ pub unsafe fn reset_handler() {
     hil::gpio::Pin::make_output(&e310x::gpio::PORT[21]);
     hil::gpio::Pin::clear(&e310x::gpio::PORT[21]);
 
+
+    let button_pins = static_init!(
+        [(&'static sifive::gpio::GpioPin, capsules::button::GpioMode); 1],
+        [(&e310x::gpio::PORT[4],capsules::button::GpioMode::HighWhenPressed)]
+    );
+
+    let button = static_init!(
+        capsules::button::Button<'static, sifive::gpio::GpioPin>,
+        capsules::button::Button::new(
+            button_pins,
+            board_kernel.create_grant(&memory_allocation_cap)
+        )
+    );
+    for &(btn, _) in button_pins.iter() {
+        btn.set_client(button);
+    }
+
     let hifive1 = HiFive1 {
         modes: rv32i::PermissionMode::Machine as u32,
+        button: button,
     };
 
     // Create virtual device for kernel debug.

@@ -1,0 +1,2 @@
+cargo:rerun-if-changed=build.rs
+cargo:compiler-rt=/home/boo/.cargo/registry/src/github.com-1ecc6299db9ec823/compiler_builtins-0.1.16/compiler-rt

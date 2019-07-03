@@ -1,0 +1,6 @@
+cargo:rerun-if-changed=layout.ld
+cargo:rerun-if-changed=../kernel_layout.ld
+cargo:rustc-link-ar=-T./layout.ld
+cargo:rustc-link-ar=linker-flavor=ld.lld
+cargo:rustc-link-ar=relocation-model=dynamic-no-pic
+cargo:rustc-link-ar=link-arg=-zmax-page-size=512

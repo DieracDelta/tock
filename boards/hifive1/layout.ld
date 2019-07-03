@@ -20,4 +20,4 @@ MEMORY
 
 MPU_MIN_ALIGN = 1K;
 
-INCLUDE /home/dieraca/uropnew/toolchain/tock/boards/kernel_layout.ld
+INCLUDE /mnt/hgfs/tock/tock/boards/kernel_layout.ld

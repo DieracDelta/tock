@@ -1,0 +1,2 @@
+cargo:rustc-env=TOCK_KERNEL_VERSION=release-1.2-2018-06-1002-g94d95ac2
+

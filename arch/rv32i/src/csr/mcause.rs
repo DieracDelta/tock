@@ -1,5 +1,4 @@
 use kernel::common::registers::{register_bitfields, LocalRegisterCopy};
-use riscv_csr::csr::RiscvCsr;
 
 register_bitfields![u32,
 mcause [
@@ -9,12 +8,12 @@ mcause [
 ]
 ];
 
-trait mcauseHelpers {
+trait McauseHelpers {
     fn is_interrupt(&self) -> bool;
     fn cause(&self) -> Trap;
 }
 
-impl mcauseHelpers for LocalRegisterCopy<u32, mcause::Register> {
+impl McauseHelpers for LocalRegisterCopy<u32, mcause::Register> {
     fn is_interrupt(&self) -> bool {
         self.read(mcause::isException).eq(&1)
     }

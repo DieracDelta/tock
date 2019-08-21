@@ -7,15 +7,26 @@ use core::marker::PhantomData;
 use tock_registers::registers::{
     Field, FieldValue, IntLike, LocalRegisterCopy, RegisterLongName, TryFromValue,
 };
+
 /// Read/Write registers.
-pub struct RiscvCsr<T: IntLike, R: RegisterLongName = ()> {
+pub struct ReadWriteRiscvCsr<T: IntLike, R: RegisterLongName = ()> {
     value: T,
     associated_register: PhantomData<R>,
 }
 
-impl<T: IntLike, R: RegisterLongName> RiscvCsr<T, R> {
+pub struct WriteOnlyRiscvCsr<T: IntLike, R: RegisterLongName = ()> {
+    value: T,
+    associated_register: PhantomData<R>,
+}
+
+pub struct ReadOnlyRiscvCsr<T: IntLike, R: RegisterLongName = ()> {
+    value: T,
+    associated_register: PhantomData<R>,
+}
+
+impl<T: IntLike, R: RegisterLongName> ReadWriteRiscvCsr<T, R> {
     pub const fn new(value: T) -> Self {
-        RiscvCsr {
+        ReadWriteRiscvCsr {
             value: value,
             associated_register: PhantomData,
         }

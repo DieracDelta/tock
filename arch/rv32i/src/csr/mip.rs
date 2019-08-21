@@ -1,5 +1,4 @@
 use kernel::common::registers::register_bitfields;
-use riscv_csr::csr::RiscvCsr;
 
 register_bitfields![u32,
 mip [

@@ -4,18 +4,18 @@
 use core::marker::PhantomData;
 // use core::ops::{Add, AddAssign, BitAnd, BitOr, Not, Shl, Shr};
 
-use tock_registers::registers::{Field, FieldValue, IntLike, RegisterLongName, TryFromValue};
+use tock_registers::registers::{
+    Field, FieldValue, IntLike, LocalRegisterCopy, RegisterLongName, TryFromValue,
+};
 /// Read/Write registers.
 pub struct RiscvCsr<T: IntLike, R: RegisterLongName = ()> {
-    address: usize,
     value: T,
     associated_register: PhantomData<R>,
 }
 
 impl<T: IntLike, R: RegisterLongName> RiscvCsr<T, R> {
-    pub const fn new(address: usize, value: T) -> Self {
+    pub const fn new(value: T) -> Self {
         RiscvCsr {
-            address: address,
             value: value,
             associated_register: PhantomData,
         }
@@ -23,16 +23,14 @@ impl<T: IntLike, R: RegisterLongName> RiscvCsr<T, R> {
 
     #[inline]
     pub fn get(&self) -> T {
-        // unsafe { ::core::ptr::read_volatile(&self.value) }
         let r: T;
-        unsafe { asm!("csrr $0, $1" : "=r"(r) : "i"(self.address) :: "volatile") }
+        unsafe { asm!("csrr $0, $1" : "=r"(r) : "i"(self.value) :: "volatile") }
         r
     }
 
     #[inline]
     pub fn set(&self, value: T) {
-        // unsafe { ::core::ptr::write_volatile(&self.value as *const T as *mut T, value) }
-        unsafe { asm!("csrw $1, $0" :: "r"(self.address), "i"(self.value) :: "volatile") }
+        unsafe { asm!("csrw $1, $0" :: "r"(self.value), "i"(value) :: "volatile") }
     }
 
     #[inline]
@@ -47,10 +45,10 @@ impl<T: IntLike, R: RegisterLongName> RiscvCsr<T, R> {
         E::try_from(val)
     }
 
-    // #[inline]
-    // pub fn extract(&self) -> LocalRegisterCopy<T, R> {
-    //     LocalRegisterCopy::new(self.get())
-    // }
+    #[inline]
+    pub fn extract(&self) -> LocalRegisterCopy<T, R> {
+        LocalRegisterCopy::new(self.get())
+    }
 
     #[inline]
     pub fn write(&self, field: FieldValue<T, R>) {
@@ -64,9 +62,9 @@ impl<T: IntLike, R: RegisterLongName> RiscvCsr<T, R> {
     }
 
     #[inline]
-    // pub fn modify_no_read(&self, original: LocalRegisterCopy<T, R>, field: FieldValue<T, R>) {
-    //     self.set((original.get() & !field.mask) | field.value);
-    // }
+    pub fn modify_no_read(&self, original: LocalRegisterCopy<T, R>, field: FieldValue<T, R>) {
+        self.set((original.get() & !field.mask) | field.value);
+    }
     #[inline]
     pub fn is_set(&self, field: Field<T, R>) -> bool {
         self.read(field) != T::zero()

@@ -1,5 +1,5 @@
 {
-  description = "blah";
+  description = "a tock nix flake";
 
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
@@ -14,7 +14,7 @@
        overlays = [rust-overlay.overlay];
      }; in
      {
-       devShell = import ./shell.nix { inherit pkgs; }; 
+       devShell = import ./shell.nix { inherit pkgs; };
      }
     );
 

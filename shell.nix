@@ -32,8 +32,6 @@ let
     };
   });
 
-  rust_date = "2021-01-07";
-  rust_channel = "nightly";
   rust_targets = [
     "thumbv7em-none-eabi" "thumbv7em-none-eabihf" "thumbv6m-none-eabi"
     "riscv32imac-unknown-none-elf" "riscv32imc-unknown-none-elf" "riscv32i-unknown-none-elf"
